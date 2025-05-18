@@ -1,0 +1,6 @@
+@WebApplicationMenuZFailami_HostAddress = http://localhost:5234
+
+GET {{WebApplicationMenuZFailami_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
