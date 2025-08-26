@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace WebApplicationMenuZFailami.Controllers
+namespace tipJar.Controllers
 {
     [ApiController]
     [Route("[controller]")]

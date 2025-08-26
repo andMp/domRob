@@ -1,4 +1,4 @@
-﻿namespace WebApplicationMenuZFailami.Data
+﻿namespace tipJar.Data
 {
     public class ApplicationDbContext
     {

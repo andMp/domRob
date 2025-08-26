@@ -1,4 +1,4 @@
-﻿namespace WebApplicationMenuZFailami.Models
+﻿namespace tipJar.Models
 {
     public class File
     {

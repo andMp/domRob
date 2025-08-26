@@ -1,0 +1,390 @@
+﻿<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>TipJar</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.12.1/dist/ethers.umd.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui;
+            max-width: 720px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+
+        input, button {
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 8px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        pre {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>TipJar</h1>
+
+    <p>Баланс контракту: <span id="bal">0</span> ETH</p>
+
+    <input id="msg" placeholder="Повідомлення" />
+    <input id="eth" value="0.01" />
+    <button id="connect">Підключити MetaMask</button>
+    <button id="send">Відправити чаєві</button>
+    <button id="showTips">Показати останні 10</button>
+    <button id="showTop">Топ-3 донатерів</button>
+
+<pre id="log"></pre>
+
+    <script>
+        const CONTRACT_ADDRESS = "0x9335c1Aa0c4552a14B7A9add1185C4411ad4FF5C";
+        const abi = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "addr",
+                        "type": "address"
+                    }
+                ],
+                "name": "blockAddress",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "message_",
+                        "type": "string"
+                    }
+                ],
+                "name": "tip",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "addr",
+                        "type": "address"
+                    }
+                ],
+                "name": "Blocked",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "message",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "time",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Tipped",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "addr",
+                        "type": "address"
+                    }
+                ],
+                "name": "unblockAddress",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "addr",
+                        "type": "address"
+                    }
+                ],
+                "name": "Unblocked",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "withdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Withdrawn",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "blocked",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "contractBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "n",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "lastTips",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "from",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "message",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "time",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct TipJar.Tip[]",
+                        "name": "",
+                        "type": "tuple[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "MIN_TIP",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "rating",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tips",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "message",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "time",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalTips",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+let provider, signer, contract;
+const el = id => document.getElementById(id);
+
+async function refreshBalance(){
+    const res = await fetch('/api/tip/total');
+    const total = await res.json();
+    el('bal').textContent = (total/1e18).toFixed(4);
+}
+
+el('connect').onclick = async () => {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    signer = await provider.getSigner();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+    alert("MetaMask підключено ✅");
+    await refreshBalance();
+};
+
+el('send').onclick = async () => {
+    const value = el('eth').value;
+    const msg = el('msg').value;
+    const tx = await contract.tip(msg, { value: ethers.parseEther(value) });
+    await tx.wait();
+    alert("Відправлено!");
+    await refreshBalance();
+};
+
+el('showTips').onclick = async () => {
+    const resp = await fetch('/api/tip/last?count=10');
+    const tips = await resp.json();
+    let out = "Останні 10 чаєвих:\n";
+    tips.forEach(t => {
+        const time = new Date(t.time*1000).toLocaleString();
+        out += `${t.from} — ${(t.amount/1e18).toFixed(4)} ETH — "${t.message}" — ${time}\n`;
+    });
+    el('log').textContent = out;
+};
+
+el('showTop').onclick = async () => {
+    const resp = await fetch('/api/tip/top');
+    const top = await resp.json();
+    let out = "Топ-3 донатерів:\n";
+    top.forEach(t => out += `${t.address} — ${t.total.toFixed(4)} ETH\n`);
+    el('log').textContent = out;
+};
+    </script>
+</body>
+</html>

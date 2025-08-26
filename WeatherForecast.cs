@@ -1,4 +1,4 @@
-namespace WebApplicationMenuZFailami
+namespace tipJar
 {
     public class WeatherForecast
     {
