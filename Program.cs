@@ -1,3 +1,4 @@
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton(new EthereumService("https://rpc-goerli.mytestrpc.io"));

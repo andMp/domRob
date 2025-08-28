@@ -1,390 +1,929 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <title>TipJar</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.12.1/dist/ethers.umd.min.js"></script>
+    <meta charset="utf-8" />
+    <title>TipJar DApp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <style>
-        body {
-            font-family: system-ui;
-            max-width: 720px;
-            margin: 40px auto;
-            padding: 0 16px;
+        :root {
+            --bg: #0f1420;
+            --card: #151c2c;
+            --muted: #7b89a6;
+            --text: #e8eefc;
+            --accent: #52d1ff;
+            --ok: #34d399;
+            --warn: #f59e0b;
+            --err: #ef4444;
         }
 
-        input, button {
-            padding: 8px 12px;
-            margin: 4px;
-            border-radius: 8px;
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font: 16px/1.5 system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif
+        }
+
+        a {
+            color: var(--accent)
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 30px auto;
+            padding: 0 16px
+        }
+
+        .grid {
+            display: grid;
+            gap: 16px
+        }
+
+        .cols {
+            grid-template-columns: 1.1fr 1fr
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid #1f2a44;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 6px 18px rgba(0,0,0,.25)
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 0 0 6px
+        }
+
+        h2 {
+            font-size: 20px;
+            margin: 0 0 10px
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 14px
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 6px;
+            color: #c7d2fe
+        }
+
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid #273453;
+            background: #0e1524;
+            color: var(--text)
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical
         }
 
         button {
             cursor: pointer;
+            font-weight: 600;
+            background: linear-gradient(135deg,#2b6cb0,#2563eb);
+            border: none
         }
 
-        pre {
-            border: 1px solid #ccc;
+            button.secondary {
+                background: #0e1524;
+                border: 1px solid #2a365c
+            }
+
+            button.warn {
+                background: #40220e;
+                border: 1px solid #5a3516
+            }
+
+            button.ok {
+                background: #0d2e26;
+                border: 1px solid #1f6d57
+            }
+
+            button:disabled {
+                opacity: .6;
+                cursor: not-allowed
+            }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #0b1324;
+            border: 1px solid #233052;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 13px
+        }
+
+        .list {
+            display: grid;
+            gap: 10px
+        }
+
+        .item {
             padding: 10px;
-            border-radius: 8px;
+            border: 1px solid #213055;
+            border-radius: 12px;
+            background: #0e1524
+        }
+
+        code.k {
+            font-family: ui-monospace,Menlo,Consolas,monospace;
+            font-size: 13px;
+            background: #0b1324;
+            padding: 2px 6px;
+            border-radius: 6px
+        }
+
+        .right {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end
+        }
+
+        .spaced {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px
+        }
+
+        .small {
+            font-size: 13px
+        }
+
+        .mono {
+            font-family: ui-monospace,Menlo,Consolas,monospace
         }
     </style>
 </head>
 <body>
-    <h1>TipJar</h1>
+    <div class="container grid">
+        <div class="spaced">
+            <div>
+                <h1>TipJar</h1>
+                <div class="muted">5% комісії власнику, 95% накопичується в контракті.</div>
+            </div>
+            <div class="row">
+                <button id="connectBtn">Підключити гаманець</button>
+            </div>
+        </div>
 
-    <p>Баланс контракту: <span id="bal">0</span> ETH</p>
+        <div class="grid cols">
+            <div class="grid">
+                <div class="card">
+                    <h2>Надіслати чайові</h2>
+                    <div class="muted small">Мінімум: <span id="minTip">—</span> ETH · Макс. довжина повідомлення: <span id="maxLen">—</span> симв.</div>
+                    <div class="row" style="margin-top:10px">
+                        <div style="flex:1 1 160px">
+                            <label for="amount">Сума (ETH)</label>
+                            <input id="amount" placeholder="0.01" inputmode="decimal" />
+                        </div>
+                        <div class="pill"><span>Ви:</span><span id="me" class="mono">—</span></div>
+                    </div>
+                    <label for="message" style="margin-top:10px">Повідомлення</label>
+                    <textarea id="message" maxlength="200" placeholder="Дякую за роботу!"></textarea>
+                    <div class="spaced small muted" style="margin:6px 0 10px">
+                        <span id="msgCount">0/200</span>
+                        <span>Заблоковано: <b id="blockedFlag">—</b></span>
+                    </div>
+                    <div class="right">
+                        <button id="tipBtn">Надіслати</button>
+                    </div>
+                    <div id="tipStatus" class="small muted" style="margin-top:8px"></div>
+                </div>
 
-    <input id="msg" placeholder="Повідомлення" />
-    <input id="eth" value="0.01" />
-    <button id="connect">Підключити MetaMask</button>
-    <button id="send">Відправити чаєві</button>
-    <button id="showTips">Показати останні 10</button>
-    <button id="showTop">Топ-3 донатерів</button>
+                <div class="card">
+                    <h2>Останні 10 чайових</h2>
+                    <div class="right"><button class="secondary" id="reloadLast">Показати / Оновити</button></div>
+                    <div id="lastList" class="list" style="margin-top:10px"></div>
+                </div>
+            </div>
 
-<pre id="log"></pre>
+            <div class="grid">
+                <div class="card">
+                    <h2>Топ-3 донаторів</h2>
+                    <div id="topList" class="list"></div>
+                    <div class="right" style="margin-top:10px"><button class="secondary" id="reloadTop">Оновити топ</button></div>
+                </div>
+
+                <div class="card" id="ownerPanel" style="display:none">
+                    <h2>Панель власника</h2>
+                    <div class="muted small">Власник: <span id="ownerAddr" class="mono">—</span></div>
+                    <label for="addrToBlock" style="margin-top:10px">Адреса для блокування/розблокування</label>
+                    <input id="addrToBlock" placeholder="0x..." />
+                    <div class="row">
+                        <button class="warn" id="blockBtn">Заблокувати адресу</button>
+                        <button class="ok" id="unblockBtn">Розблокувати адресу</button>
+                    </div>
+                    <div class="muted small" id="ownerStatus" style="margin-top:8px"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="spaced">
+                <div class="muted small">Баланс контракту: <span id="contractBal">—</span> ETH · Всього чайових (95% частка): <span id="totalTips">—</span> wei</div>
+                <div class="muted small">Контракт: <code class="k" id="addr">—</code></div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        const CONTRACT_ADDRESS = "0x9335c1Aa0c4552a14B7A9add1185C4411ad4FF5C";
-        const abi = [
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "addr",
-                        "type": "address"
-                    }
-                ],
-                "name": "blockAddress",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "message_",
-                        "type": "string"
-                    }
-                ],
-                "name": "tip",
-                "outputs": [],
-                "stateMutability": "payable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "stateMutability": "nonpayable",
-                "type": "constructor"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "address",
-                        "name": "addr",
-                        "type": "address"
-                    }
-                ],
-                "name": "Blocked",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "from",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "message",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "time",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "Tipped",
-                "type": "event"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "addr",
-                        "type": "address"
-                    }
-                ],
-                "name": "unblockAddress",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "address",
-                        "name": "addr",
-                        "type": "address"
-                    }
-                ],
-                "name": "Unblocked",
-                "type": "event"
-            },
-            {
-                "inputs": [],
-                "name": "withdraw",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "to",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "Withdrawn",
-                "type": "event"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "name": "blocked",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "contractBalance",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "n",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "lastTips",
-                "outputs": [
-                    {
-                        "components": [
-                            {
-                                "internalType": "address",
-                                "name": "from",
-                                "type": "address"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "amount",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "message",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "time",
-                                "type": "uint256"
-                            }
-                        ],
-                        "internalType": "struct TipJar.Tip[]",
-                        "name": "",
-                        "type": "tuple[]"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "MIN_TIP",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "owner",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "name": "rating",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "tips",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "from",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "message",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "time",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "totalTips",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
+        (async () => {
+            const contractAddress = "0x7DFf8E84B1e0e6bc52B088FAAf45F4e05d13bFE0";
+            const abi = [
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "tipIndex",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "feedback_",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "addFeedback",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "constructor"
+                },
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": true,
+                            "internalType": "address",
+                            "name": "user",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "AddressBlocked",
+                    "type": "event"
+                },
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": true,
+                            "internalType": "address",
+                            "name": "user",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "AddressUnblocked",
+                    "type": "event"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "user",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "blockAddress",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": true,
+                            "internalType": "address",
+                            "name": "from",
+                            "type": "address"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "uint256",
+                            "name": "tipIndex",
+                            "type": "uint256"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "string",
+                            "name": "feedback",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "FeedbackAdded",
+                    "type": "event"
+                },
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": false,
+                            "internalType": "uint256",
+                            "name": "tipIndex",
+                            "type": "uint256"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "string",
+                            "name": "reply",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "OwnerReplied",
+                    "type": "event"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "tipIndex",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "reply_",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "replyFeedback",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "string",
+                            "name": "message_",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "tip",
+                    "outputs": [],
+                    "stateMutability": "payable",
+                    "type": "function"
+                },
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": true,
+                            "internalType": "address",
+                            "name": "from",
+                            "type": "address"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "uint256",
+                            "name": "amount",
+                            "type": "uint256"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "string",
+                            "name": "message",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "Tipped",
+                    "type": "event"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "user",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "unblockAddress",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "amount",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "withdraw",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": true,
+                            "internalType": "address",
+                            "name": "to",
+                            "type": "address"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "uint256",
+                            "name": "amount",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "Withdrawn",
+                    "type": "event"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "blocked",
+                    "outputs": [
+                        {
+                            "internalType": "bool",
+                            "name": "",
+                            "type": "bool"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "contractBalance",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "donorTotals",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "n",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "lastNTips",
+                    "outputs": [
+                        {
+                            "components": [
+                                {
+                                    "internalType": "address",
+                                    "name": "from",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "amount",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "string",
+                                    "name": "message",
+                                    "type": "string"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "timestamp",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "string",
+                                    "name": "feedback",
+                                    "type": "string"
+                                },
+                                {
+                                    "internalType": "string",
+                                    "name": "ownerReply",
+                                    "type": "string"
+                                }
+                            ],
+                            "internalType": "struct TipJar.Tip[]",
+                            "name": "",
+                            "type": "tuple[]"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "MESSAGE_MAX_LENGTH",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "MIN_TIP",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "owner",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "tips",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "from",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "amount",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "message",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "timestamp",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "feedback",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "ownerReply",
+                            "type": "string"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "topN",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "topDonors",
+                    "outputs": [
+                        {
+                            "internalType": "address[]",
+                            "name": "",
+                            "type": "address[]"
+                        },
+                        {
+                            "internalType": "uint256[]",
+                            "name": "",
+                            "type": "uint256[]"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "totalTips",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ];
+
+            let provider, signer, contractRead, contractWrite, me = null, owner = null, minTipWei = 0n, msgMax = 200n;
+
+            const $ = (id) => document.getElementById(id);
+            const els = {
+                connectBtn: $('connectBtn'),
+                tipBtn: $('tipBtn'),
+                amount: $('amount'),
+                message: $('message'),
+                msgCount: $('msgCount'),
+                tipStatus: $('tipStatus'),
+                me: $('me'),
+                minTip: $('minTip'),
+                maxLen: $('maxLen'),
+                blockedFlag: $('blockedFlag'),
+                reloadTop: $('reloadTop'),
+                reloadLast: $('reloadLast'),
+                topList: $('topList'),
+                lastList: $('lastList'),
+                ownerPanel: $('ownerPanel'),
+                ownerAddr: $('ownerAddr'),
+                addrToBlock: $('addrToBlock'),
+                blockBtn: $('blockBtn'),
+                unblockBtn: $('unblockBtn'),
+                ownerStatus: $('ownerStatus'),
+                contractBal: $('contractBal'),
+                totalTips: $('totalTips'),
+                addr: $('addr')
+            };
+
+            els.addr.textContent = contractAddress;
+
+            const fmtEth = (wei) => ethers.formatEther(wei);
+            const short = (a) => a ? a.slice(0, 6) + '…' + a.slice(-4) : '—';
+            const setStatus = (el, text, kind = '') => {
+                el.textContent = text;
+                el.style.color = kind === 'ok' ? 'var(--ok)' : kind === 'err' ? 'var(--err)' : 'var(--muted)';
+            };
+
+            async function connect() {
+                if (!window.ethereum) { alert('Потрібен MetaMask'); return; }
+                provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send('eth_requestAccounts', []);
+                signer = await provider.getSigner();
+                me = await signer.getAddress();
+                contractRead = new ethers.Contract(contractAddress, abi, provider);
+                contractWrite = new ethers.Contract(contractAddress, abi, signer);
+                els.me.textContent = short(me);
+                await refreshStatic();
+                await refreshMyBlocked();
+                await loadTop();
+                await loadLast();
+                listenEvents();
+                if (me && owner && me.toLowerCase() === owner.toLowerCase()) {
+                    els.ownerPanel.style.display = '';
+                } else {
+                    els.ownerPanel.style.display = 'none';
+                }
             }
-        ];
 
-let provider, signer, contract;
-const el = id => document.getElementById(id);
+            async function refreshStatic() {
+                try {
+                    owner = await contractRead.owner();
+                    minTipWei = await contractRead.MIN_TIP();
+                    msgMax = await contractRead.MESSAGE_MAX_LENGTH();
+                    const balWei = await contractRead.contractBalance();
+                    const totalTipsWei = await contractRead.totalTips();
+                    els.ownerAddr.textContent = owner;
+                    els.minTip.textContent = fmtEth(minTipWei);
+                    els.maxLen.textContent = msgMax.toString();
+                    els.contractBal.textContent = fmtEth(balWei);
+                    els.totalTips.textContent = totalTipsWei.toString();
+                    els.message.maxLength = Number(msgMax);
+                    updateCounter();
+                } catch (e) {
+                    console.error(e);
+                }
+            }
 
-async function refreshBalance(){
-    const res = await fetch('/api/tip/total');
-    const total = await res.json();
-    el('bal').textContent = (total/1e18).toFixed(4);
-}
+            async function refreshMyBlocked() {
+                if (!me) return;
+                try {
+                    const isBlocked = await contractRead.blocked(me);
+                    els.blockedFlag.textContent = isBlocked ? 'так' : 'ні';
+                    els.blockedFlag.style.color = isBlocked ? 'var(--err)' : 'var(--ok)';
+                    els.tipBtn.disabled = isBlocked;
+                } catch (e) { console.error(e); }
+            }
 
-el('connect').onclick = async () => {
-    provider = new ethers.BrowserProvider(window.ethereum);
-    await window.ethereum.request({ method: "eth_requestAccounts" });
-    signer = await provider.getSigner();
-    contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
-    alert("MetaMask підключено ✅");
-    await refreshBalance();
-};
+            function updateCounter() {
+                els.msgCount.textContent = `${els.message.value.length}/${els.message.maxLength}`;
+            }
 
-el('send').onclick = async () => {
-    const value = el('eth').value;
-    const msg = el('msg').value;
-    const tx = await contract.tip(msg, { value: ethers.parseEther(value) });
-    await tx.wait();
-    alert("Відправлено!");
-    await refreshBalance();
-};
+            async function sendTip() {
+                try {
+                    if (!signer) await connect();
+                    const amountStr = els.amount.value.trim();
+                    if (!amountStr) { setStatus(els.tipStatus, 'Вкажіть суму.', 'err'); return; }
+                    const valueWei = ethers.parseEther(amountStr);
+                    if (valueWei < minTipWei) {
+                        setStatus(els.tipStatus, `Мінімальна сума: ${fmtEth(minTipWei)} ETH`, 'err');
+                        return;
+                    }
+                    const msg = els.message.value.trim();
+                    if (msg.length > Number(msgMax)) {
+                        setStatus(els.tipStatus, `Повідомлення занадто довге (макс ${msgMax}).`, 'err'); return;
+                    }
+                    setStatus(els.tipStatus, 'Відправляємо транзакцію…');
+                    const tx = await contractWrite.tip(msg, { value: valueWei });
+                    setStatus(els.tipStatus, `Підтвердження… tx: ${tx.hash}`);
+                    await tx.wait();
+                    setStatus(els.tipStatus, 'Готово! Дякуємо', 'ok');
+                    els.message.value = '';
+                    els.amount.value = '';
+                    updateCounter();
+                    await refreshStatic();
+                    await refreshMyBlocked();
+                    await loadTop();
+                    await loadLast();
+                } catch (e) {
+                    console.error(e);
+                    setStatus(els.tipStatus, e.shortMessage || e.message || 'Помилка', 'err');
+                }
+            }
 
-el('showTips').onclick = async () => {
-    const resp = await fetch('/api/tip/last?count=10');
-    const tips = await resp.json();
-    let out = "Останні 10 чаєвих:\n";
-    tips.forEach(t => {
-        const time = new Date(t.time*1000).toLocaleString();
-        out += `${t.from} — ${(t.amount/1e18).toFixed(4)} ETH — "${t.message}" — ${time}\n`;
-    });
-    el('log').textContent = out;
-};
+            async function loadTop() {
+                try {
+                    const [addresses, amounts] = await contractRead.topDonors(3);
+                    els.topList.innerHTML = '';
+                    addresses.forEach((addr, i) => {
+                        const eth = ethers.formatEther(amounts[i]);
+                        const div = document.createElement('div');
+                        div.className = 'item';
+                        div.innerHTML = `
+              <div class="spaced">
+                <div class="mono">${addr}</div>
+                <div><b>${Number(eth).toLocaleString(undefined, { maximumFractionDigits: 6 })}</b> ETH</div>
+              </div>`;
+                        els.topList.appendChild(div);
+                    });
+                    if (!addresses.length) {
+                        els.topList.innerHTML = `<div class="muted small">Немає даних.</div>`;
+                    }
+                } catch (e) {
+                    console.error(e);
+                    els.topList.innerHTML = `<div class="muted small">Помилка завантаження топу.</div>`;
+                }
+            }
 
-el('showTop').onclick = async () => {
-    const resp = await fetch('/api/tip/top');
-    const top = await resp.json();
-    let out = "Топ-3 донатерів:\n";
-    top.forEach(t => out += `${t.address} — ${t.total.toFixed(4)} ETH\n`);
-    el('log').textContent = out;
-};
+            async function loadLast() {
+                try {
+                    const raw = await contractRead.lastNTips(10);
+                    const items = Array.from(raw);
+                    els.lastList.innerHTML = items.length
+                        ? items.reverse().map(t => {
+                            const d = new Date(Number(t.timestamp) * 1000).toLocaleString();
+                            return `<div class="item">
+            <div class="spaced">
+              <div class="mono">${short(t.from)}</div>
+              <div><b>${ethers.formatEther(t.amount)}</b> ETH</div>
+            </div>
+            <div class="small muted">${d}</div>
+            <div>${escapeHtml(t.message)}</div>
+            <div class="small">Відгук: ${t.feedback || '<i>нема</i>'}</div>
+            <div class="small">Відповідь: ${t.ownerReply || '<i>нема</i>'}</div>
+          </div>`;
+                        }).join('')
+                        : `<div class="muted small">Поки що немає чайових.</div>`;
+                } catch (e) {
+                    console.error(e);
+                    els.lastList.innerHTML = `<div class="muted small">Помилка завантаження історії.</div>`;
+                }
+            }
+            
+            async function estimateGlobalIndexFromRecent(tipObj) {
+                try {
+                    const n = 10;
+                    const recent = await contractRead.lastNTips(n);
+                    let pos = -1;
+                    for (let i = 0; i < recent.length; i++) {
+                        const t = recent[i];
+                        if (t.from.toLowerCase() === tipObj.from.toLowerCase()
+                            && t.amount === tipObj.amount
+                            && t.timestamp === tipObj.timestamp
+                            && t.message === tipObj.message) { pos = i; break; }
+                    }
+                    if (pos < 0) return -1;
+                    const big = Array.from(await contractRead.lastNTips(10000));
+                    const total = big.length;
+                    const globalIndex = total - (n - pos);
+                    return globalIndex;
+                } catch {
+                    return -1;
+                }
+            }
+
+            async function blockAddr(block = true) {
+                try {
+                    if (!signer) await connect();
+                    const addr = els.addrToBlock.value.trim();
+                    if (!addr) { setStatus(els.ownerStatus, 'Введіть адресу.', 'err'); return; }
+                    setStatus(els.ownerStatus, block ? 'Блокуємо…' : 'Розблокуємо…');
+                    const tx = block ? await contractWrite.blockAddress(addr) : await contractWrite.unblockAddress(addr);
+                    await tx.wait();
+                    setStatus(els.ownerStatus, 'Готово', 'ok');
+                    if (me && addr.toLowerCase() === me.toLowerCase()) await refreshMyBlocked();
+                } catch (e) {
+                    console.error(e);
+                    setStatus(els.ownerStatus, e.shortMessage || e.message || 'Помилка', 'err');
+                }
+            }
+
+            function listenEvents() {
+                try {
+                    contractRead.on('Tipped', async (from, amount, message) => {
+                        await refreshStatic();
+                        await loadTop();
+                        await loadLast();
+                    });
+                    contractRead.on('AddressBlocked', async (user) => { await refreshMyBlocked(); });
+                    contractRead.on('AddressUnblocked', async (user) => { await refreshMyBlocked(); });
+                    contractRead.on('FeedbackAdded', async () => { await loadLast(); });
+                    contractRead.on('OwnerReplied', async () => { await loadLast(); });
+                } catch (e) { console.warn('Events not available:', e); }
+            }
+
+            function escapeHtml(s) { return s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch])); }
+
+            els.connectBtn.addEventListener('click', connect);
+            els.tipBtn.addEventListener('click', sendTip);
+            els.reloadTop.addEventListener('click', loadTop);
+            els.reloadLast.addEventListener('click', loadLast);
+            els.message.addEventListener('input', updateCounter);
+            els.blockBtn.addEventListener('click', () => blockAddr(true));
+            els.unblockBtn.addEventListener('click', () => blockAddr(false));
+
+            if (window.ethereum) {
+                window.ethereum.on?.('accountsChanged', () => location.reload());
+                window.ethereum.on?.('chainChanged', () => location.reload());
+            }
+        })();
     </script>
 </body>
 </html>

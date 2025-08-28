@@ -2,26 +2,134 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using System.Numerics;
-using Microsoft.AspNetCore.Components;
-using System.Diagnostics.Contracts;
-
 
 public class EthereumService
 {
     private readonly Web3 web3;
-    private readonly string contractAddress = "0x9335c1Aa0c4552a14B7A9add1185C4411ad4FF5C";
+    private readonly string contractAddress = "0x7DFf8E84B1e0e6bc52B088FAAf45F4e05d13bFE0";
     private readonly Nethereum.Contracts.Contract contract;
 
     private const string abi = @"[
 	{
 		""inputs"": [
 			{
+				""internalType"": ""uint256"",
+				""name"": ""tipIndex"",
+				""type"": ""uint256""
+			},
+			{
+				""internalType"": ""string"",
+				""name"": ""feedback_"",
+				""type"": ""string""
+			}
+		],
+		""name"": ""addFeedback"",
+		""outputs"": [],
+		""stateMutability"": ""nonpayable"",
+		""type"": ""function""
+	},
+	{
+		""inputs"": [],
+		""stateMutability"": ""nonpayable"",
+		""type"": ""constructor""
+	},
+	{
+		""anonymous"": false,
+		""inputs"": [
+			{
+				""indexed"": true,
 				""internalType"": ""address"",
-				""name"": ""addr"",
+				""name"": ""user"",
+				""type"": ""address""
+			}
+		],
+		""name"": ""AddressBlocked"",
+		""type"": ""event""
+	},
+	{
+		""anonymous"": false,
+		""inputs"": [
+			{
+				""indexed"": true,
+				""internalType"": ""address"",
+				""name"": ""user"",
+				""type"": ""address""
+			}
+		],
+		""name"": ""AddressUnblocked"",
+		""type"": ""event""
+	},
+	{
+		""inputs"": [
+			{
+				""internalType"": ""address"",
+				""name"": ""user"",
 				""type"": ""address""
 			}
 		],
 		""name"": ""blockAddress"",
+		""outputs"": [],
+		""stateMutability"": ""nonpayable"",
+		""type"": ""function""
+	},
+	{
+		""anonymous"": false,
+		""inputs"": [
+			{
+				""indexed"": true,
+				""internalType"": ""address"",
+				""name"": ""from"",
+				""type"": ""address""
+			},
+			{
+				""indexed"": false,
+				""internalType"": ""uint256"",
+				""name"": ""tipIndex"",
+				""type"": ""uint256""
+			},
+			{
+				""indexed"": false,
+				""internalType"": ""string"",
+				""name"": ""feedback"",
+				""type"": ""string""
+			}
+		],
+		""name"": ""FeedbackAdded"",
+		""type"": ""event""
+	},
+	{
+		""anonymous"": false,
+		""inputs"": [
+			{
+				""indexed"": false,
+				""internalType"": ""uint256"",
+				""name"": ""tipIndex"",
+				""type"": ""uint256""
+			},
+			{
+				""indexed"": false,
+				""internalType"": ""string"",
+				""name"": ""reply"",
+				""type"": ""string""
+			}
+		],
+		""name"": ""OwnerReplied"",
+		""type"": ""event""
+	},
+	{
+		""inputs"": [
+			{
+				""internalType"": ""uint256"",
+				""name"": ""tipIndex"",
+				""type"": ""uint256""
+			},
+			{
+				""internalType"": ""string"",
+				""name"": ""reply_"",
+				""type"": ""string""
+			}
+		],
+		""name"": ""replyFeedback"",
 		""outputs"": [],
 		""stateMutability"": ""nonpayable"",
 		""type"": ""function""
@@ -38,24 +146,6 @@ public class EthereumService
 		""outputs"": [],
 		""stateMutability"": ""payable"",
 		""type"": ""function""
-	},
-	{
-		""inputs"": [],
-		""stateMutability"": ""nonpayable"",
-		""type"": ""constructor""
-	},
-	{
-		""anonymous"": false,
-		""inputs"": [
-			{
-				""indexed"": false,
-				""internalType"": ""address"",
-				""name"": ""addr"",
-				""type"": ""address""
-			}
-		],
-		""name"": ""Blocked"",
-		""type"": ""event""
 	},
 	{
 		""anonymous"": false,
@@ -77,12 +167,6 @@ public class EthereumService
 				""internalType"": ""string"",
 				""name"": ""message"",
 				""type"": ""string""
-			},
-			{
-				""indexed"": false,
-				""internalType"": ""uint256"",
-				""name"": ""time"",
-				""type"": ""uint256""
 			}
 		],
 		""name"": ""Tipped"",
@@ -92,7 +176,7 @@ public class EthereumService
 		""inputs"": [
 			{
 				""internalType"": ""address"",
-				""name"": ""addr"",
+				""name"": ""user"",
 				""type"": ""address""
 			}
 		],
@@ -102,20 +186,13 @@ public class EthereumService
 		""type"": ""function""
 	},
 	{
-		""anonymous"": false,
 		""inputs"": [
 			{
-				""indexed"": false,
-				""internalType"": ""address"",
-				""name"": ""addr"",
-				""type"": ""address""
+				""internalType"": ""uint256"",
+				""name"": ""amount"",
+				""type"": ""uint256""
 			}
 		],
-		""name"": ""Unblocked"",
-		""type"": ""event""
-	},
-	{
-		""inputs"": [],
 		""name"": ""withdraw"",
 		""outputs"": [],
 		""stateMutability"": ""nonpayable"",
@@ -175,12 +252,31 @@ public class EthereumService
 	{
 		""inputs"": [
 			{
+				""internalType"": ""address"",
+				""name"": """",
+				""type"": ""address""
+			}
+		],
+		""name"": ""donorTotals"",
+		""outputs"": [
+			{
+				""internalType"": ""uint256"",
+				""name"": """",
+				""type"": ""uint256""
+			}
+		],
+		""stateMutability"": ""view"",
+		""type"": ""function""
+	},
+	{
+		""inputs"": [
+			{
 				""internalType"": ""uint256"",
 				""name"": ""n"",
 				""type"": ""uint256""
 			}
 		],
-		""name"": ""lastTips"",
+		""name"": ""lastNTips"",
 		""outputs"": [
 			{
 				""components"": [
@@ -201,13 +297,36 @@ public class EthereumService
 					},
 					{
 						""internalType"": ""uint256"",
-						""name"": ""time"",
+						""name"": ""timestamp"",
 						""type"": ""uint256""
+					},
+					{
+						""internalType"": ""string"",
+						""name"": ""feedback"",
+						""type"": ""string""
+					},
+					{
+						""internalType"": ""string"",
+						""name"": ""ownerReply"",
+						""type"": ""string""
 					}
 				],
 				""internalType"": ""struct TipJar.Tip[]"",
 				""name"": """",
 				""type"": ""tuple[]""
+			}
+		],
+		""stateMutability"": ""view"",
+		""type"": ""function""
+	},
+	{
+		""inputs"": [],
+		""name"": ""MESSAGE_MAX_LENGTH"",
+		""outputs"": [
+			{
+				""internalType"": ""uint256"",
+				""name"": """",
+				""type"": ""uint256""
 			}
 		],
 		""stateMutability"": ""view"",
@@ -242,25 +361,6 @@ public class EthereumService
 	{
 		""inputs"": [
 			{
-				""internalType"": ""address"",
-				""name"": """",
-				""type"": ""address""
-			}
-		],
-		""name"": ""rating"",
-		""outputs"": [
-			{
-				""internalType"": ""uint256"",
-				""name"": """",
-				""type"": ""uint256""
-			}
-		],
-		""stateMutability"": ""view"",
-		""type"": ""function""
-	},
-	{
-		""inputs"": [
-			{
 				""internalType"": ""uint256"",
 				""name"": """",
 				""type"": ""uint256""
@@ -285,8 +385,42 @@ public class EthereumService
 			},
 			{
 				""internalType"": ""uint256"",
-				""name"": ""time"",
+				""name"": ""timestamp"",
 				""type"": ""uint256""
+			},
+			{
+				""internalType"": ""string"",
+				""name"": ""feedback"",
+				""type"": ""string""
+			},
+			{
+				""internalType"": ""string"",
+				""name"": ""ownerReply"",
+				""type"": ""string""
+			}
+		],
+		""stateMutability"": ""view"",
+		""type"": ""function""
+	},
+	{
+		""inputs"": [
+			{
+				""internalType"": ""uint256"",
+				""name"": ""topN"",
+				""type"": ""uint256""
+			}
+		],
+		""name"": ""topDonors"",
+		""outputs"": [
+			{
+				""internalType"": ""address[]"",
+				""name"": """",
+				""type"": ""address[]""
+			},
+			{
+				""internalType"": ""uint256[]"",
+				""name"": """",
+				""type"": ""uint256[]""
 			}
 		],
 		""stateMutability"": ""view"",
@@ -316,28 +450,69 @@ public class EthereumService
     [FunctionOutput]
     public class TipDTO
     {
-        [Nethereum.ABI.FunctionEncoding.Attributes.Parameter("address", "from", 1)]
+        [Parameter("address", "from", 1)]
         public string From { get; set; }
 
-        [Nethereum.ABI.FunctionEncoding.Attributes.Parameter("uint256", "amount", 2)]
+        [Parameter("uint256", "amount", 2)]
         public BigInteger Amount { get; set; }
 
-        [Nethereum.ABI.FunctionEncoding.Attributes.Parameter("string", "message", 3)]
+        [Parameter("string", "message", 3)]
         public string Message { get; set; }
 
-        [Nethereum.ABI.FunctionEncoding.Attributes.Parameter("uint256", "time", 4)]
+        [Parameter("uint256", "time", 4)]
         public BigInteger Time { get; set; }
     }
 
     public async Task<BigInteger> GetTotalTipsAsync()
     {
-        var function = contract.GetFunction("totalTips");
-        return await function.CallAsync<BigInteger>();
+        var f = contract.GetFunction("totalTips");
+        return await f.CallAsync<BigInteger>();
     }
 
     public async Task<List<TipDTO>> GetLastTipsAsync(int n)
     {
-        var function = contract.GetFunction("lastTips");
-        return await function.CallAsync<List<TipDTO>>(n);
+        var f = contract.GetFunction("lastTips");
+        return await f.CallAsync<List<TipDTO>>(n);
+    }
+
+    public async Task<bool> GetPausedAsync()
+    {
+        var f = contract.GetFunction("paused");
+        return await f.CallAsync<bool>();
+    }
+
+    public async Task<BigInteger> GetMinTipAsync()
+    {
+        var f = contract.GetFunction("minTip");
+        return await f.CallAsync<BigInteger>();
+    }
+
+    public async Task<BigInteger> GetCooldownAsync()
+    {
+        var f = contract.GetFunction("cooldown");
+        return await f.CallAsync<BigInteger>();
+    }
+
+    public async Task<string> GetOwnerAsync()
+    {
+        var f = contract.GetFunction("owner");
+        return await f.CallAsync<string>();
+    }
+    public async Task<List<(string Address, decimal Total)>> GetTopDonorsAsync(int topN)
+    {
+        var f = contract.GetFunction("topDonors");
+        var result = await f.CallDeserializingToObjectAsync<TopDonorsDTO>(topN);
+        var list = result.Addresses.Zip(result.Amounts, (addr, amt) => (addr, (decimal)amt / 1e18m)).ToList();
+        return list;
+    }
+
+    [FunctionOutput]
+    public class TopDonorsDTO
+    {
+        [Parameter("address[]", "addresses", 1)]
+        public List<string> Addresses { get; set; }
+
+        [Parameter("uint256[]", "amounts", 2)]
+        public List<BigInteger> Amounts { get; set; }
     }
 }
